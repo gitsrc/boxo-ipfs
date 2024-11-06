@@ -128,6 +128,7 @@ func (pqm *ProviderQueryManager) FindProvidersAsync(sessionCtx context.Context, 
 	sessionCtx, span = internal.StartSpan(sessionCtx, "ProviderQueryManager.FindProvidersAsync", trace.WithAttributes(attribute.Stringer("cid", k)))
 	defer span.End()
 
+	log.Debugw("Writing to pqm.providerQueryMessages", "cid", k.String())
 	select {
 	case pqm.providerQueryMessages <- &newProvideQueryMessage{
 		ctx:                   sessionCtx,
@@ -144,6 +145,7 @@ func (pqm *ProviderQueryManager) FindProvidersAsync(sessionCtx context.Context, 
 		return ch
 	}
 
+	log.Debugw("Reading from inProgressRequestChan", "cid", k.String())
 	// DO NOT select on sessionCtx. We only want to abort here if we're
 	// shutting down because we can't actually _cancel_ the request till we
 	// get to receiveProviders.
@@ -156,6 +158,7 @@ func (pqm *ProviderQueryManager) FindProvidersAsync(sessionCtx context.Context, 
 	case receivedInProgressRequest = <-inProgressRequestChan:
 	}
 
+	log.Debugw("Reading returnedProviders", "cid", k.String())
 	return pqm.receiveProviders(sessionCtx, k, receivedInProgressRequest)
 }
 
