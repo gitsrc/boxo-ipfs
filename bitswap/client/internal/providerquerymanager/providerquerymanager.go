@@ -10,7 +10,7 @@ import (
 	"github.com/ipfs/boxo/bitswap/client/internal"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
-	peer "github.com/libp2p/go-libp2p/core/peer"
+	"github.com/libp2p/go-libp2p/core/peer"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -88,6 +88,8 @@ type ProviderQueryManager struct {
 
 	// do not touch outside the run loop
 	inProgressRequestStatuses map[cid.Cid]*inProgressRequestStatus
+
+	connToCtr *counter
 }
 
 // New initializes a new ProviderQueryManager for a given context and a given
@@ -99,6 +101,7 @@ func New(ctx context.Context, network ProviderQueryNetwork) *ProviderQueryManage
 		providerQueryMessages:        make(chan providerQueryMessage, 16),
 		providerRequestsProcessing:   make(chan *findProviderRequest),
 		incomingFindProviderRequests: make(chan *findProviderRequest),
+		connToCtr:                    newCounter(),
 	}
 	pqm.SetFindProviderTimeout(defaultTimeout)
 	return pqm
@@ -231,6 +234,13 @@ func (pqm *ProviderQueryManager) cancelProviderRequest(ctx context.Context, k ci
 }
 
 func (pqm *ProviderQueryManager) findProviderWorker() {
+	// How often to log counters.
+	const counterLogInterval = 30 * time.Second
+	// How many of the hoghest counters to log.
+	const topn = 10
+
+	lastLogTime := time.Now()
+
 	// findProviderWorker just cycles through incoming provider queries one
 	// at a time. We have six of these workers running at once
 	// to let requests go in parallel but keep them rate limited
@@ -251,6 +261,7 @@ func (pqm *ProviderQueryManager) findProviderWorker() {
 				wg.Add(1)
 				go func(p peer.ID) {
 					defer wg.Done()
+					pqm.connToCtr.add(p, 1)
 					span.AddEvent("FoundProvider", trace.WithAttributes(attribute.Stringer("peer", p)))
 					err := pqm.network.ConnectTo(findProviderCtx, p)
 					if err != nil {
@@ -272,6 +283,15 @@ func (pqm *ProviderQueryManager) findProviderWorker() {
 			}
 			wg.Wait()
 			cancel()
+
+			if time.Since(lastLogTime) >= counterLogInterval {
+				tops := pqm.connToCtr.topN(topn, ", ")
+				if tops != "" {
+					log.Debugf("Top %d ConnectTo counts: %s", topn, tops)
+				}
+				lastLogTime = time.Now()
+			}
+
 			select {
 			case pqm.providerQueryMessages <- &finishedProviderQueryMessage{
 				ctx: findProviderCtx,
