@@ -270,14 +270,24 @@ func (pqm *ProviderQueryManager) findProviderWorker() {
 					}
 				}(p)
 			}
+			start := time.Now()
 			wg.Wait()
+			elapsed := time.Since(start)
+			if elapsed > 2*time.Second {
+				log.Warnf("Waited %s for found providers goroutines", elapsed.String())
+			}
 			cancel()
+			start = time.Now()
 			select {
 			case pqm.providerQueryMessages <- &finishedProviderQueryMessage{
 				ctx: findProviderCtx,
 				k:   k,
 			}:
 			case <-pqm.ctx.Done():
+			}
+			elapsed = time.Since(start)
+			if elapsed > 2*time.Second {
+				log.Warnf("Waited %s to write to pqm.providerQueryMessages", elapsed.String())
 			}
 		case <-pqm.ctx.Done():
 			return
