@@ -201,6 +201,7 @@ func (pqm *ProviderQueryManager) receiveProviders(sessionCtx context.Context, k 
 			case outgoingProviders() <- nextProvider():
 				receivedProviders = receivedProviders[1:]
 			}
+			log.Warnf("receivedProviders size: %d", len(receivedProviders))
 		}
 	}()
 	return returnedProviders
@@ -316,6 +317,7 @@ func (pqm *ProviderQueryManager) providerRequestBufferWorker() {
 		case <-pqm.ctx.Done():
 			return
 		}
+		log.Warnf("providerQueryRequestBuffer size: %d", len(providerQueryRequestBuffer))
 	}
 }
 
