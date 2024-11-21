@@ -17,7 +17,7 @@ var log = logging.Logger("bitswap/client/provqrymgr")
 
 const (
 	maxProviders         = 10
-	maxInProcessRequests = 6
+	maxInProcessRequests = 16
 	defaultTimeout       = 10 * time.Second
 )
 
@@ -271,17 +271,15 @@ func (pqm *ProviderQueryManager) findProviderWorker() {
 					}
 				}(p)
 			}
-			go func() {
-				wg.Wait()
-				cancel()
-				select {
-				case pqm.providerQueryMessages <- &finishedProviderQueryMessage{
-					ctx: fpr.ctx,
-					k:   k,
-				}:
-				case <-pqm.ctx.Done():
-				}
-			}()
+			wg.Wait()
+			cancel()
+			select {
+			case pqm.providerQueryMessages <- &finishedProviderQueryMessage{
+				ctx: fpr.ctx,
+				k:   k,
+			}:
+			case <-pqm.ctx.Done():
+			}
 		case <-pqm.ctx.Done():
 			return
 		}
