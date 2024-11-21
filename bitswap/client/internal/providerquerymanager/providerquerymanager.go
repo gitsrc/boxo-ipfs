@@ -184,6 +184,7 @@ func (pqm *ProviderQueryManager) receiveProviders(sessionCtx context.Context, k 
 			return receivedProviders[0]
 		}
 		for len(receivedProviders) > 0 || incomingProviders != nil {
+			log.Debugf("receivedProviders size: %d", len(receivedProviders))
 			select {
 			case <-pqm.ctx.Done():
 				return
@@ -201,7 +202,6 @@ func (pqm *ProviderQueryManager) receiveProviders(sessionCtx context.Context, k 
 			case outgoingProviders() <- nextProvider():
 				receivedProviders = receivedProviders[1:]
 			}
-			log.Warnf("receivedProviders size: %d", len(receivedProviders))
 		}
 	}()
 	return returnedProviders
@@ -306,6 +306,7 @@ func (pqm *ProviderQueryManager) providerRequestBufferWorker() {
 	}
 
 	for {
+		log.Debugf("providerQueryRequestBuffer size: %d", len(providerQueryRequestBuffer))
 		select {
 		case incomingRequest, ok := <-pqm.incomingFindProviderRequests:
 			if !ok {
@@ -317,7 +318,6 @@ func (pqm *ProviderQueryManager) providerRequestBufferWorker() {
 		case <-pqm.ctx.Done():
 			return
 		}
-		log.Warnf("providerQueryRequestBuffer size: %d", len(providerQueryRequestBuffer))
 	}
 }
 
