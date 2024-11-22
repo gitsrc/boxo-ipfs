@@ -184,7 +184,6 @@ func (pqm *ProviderQueryManager) receiveProviders(sessionCtx context.Context, k 
 			return receivedProviders[0]
 		}
 		for len(receivedProviders) > 0 || incomingProviders != nil {
-			log.Debugf("receivedProviders size: %d", len(receivedProviders))
 			select {
 			case <-pqm.ctx.Done():
 				return
@@ -341,6 +340,7 @@ func (pqm *ProviderQueryManager) run() {
 	for {
 		select {
 		case nextMessage := <-pqm.providerQueryMessages:
+			log.Debugf("providerQueryMessages size: %d", len(pqm.providerQueryMessages))
 			nextMessage.debugMessage()
 			nextMessage.handle(pqm)
 		case <-pqm.ctx.Done():
