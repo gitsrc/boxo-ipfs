@@ -95,7 +95,7 @@ func New(ctx context.Context, network ProviderQueryNetwork) *ProviderQueryManage
 	return &ProviderQueryManager{
 		ctx:                          ctx,
 		network:                      network,
-		providerQueryMessages:        make(chan providerQueryMessage, 16),
+		providerQueryMessages:        make(chan providerQueryMessage),
 		providerRequestsProcessing:   make(chan *findProviderRequest),
 		incomingFindProviderRequests: make(chan *findProviderRequest),
 		inProgressRequestStatuses:    make(map[cid.Cid]*inProgressRequestStatus),
