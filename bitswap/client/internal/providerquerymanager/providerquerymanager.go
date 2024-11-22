@@ -270,15 +270,17 @@ func (pqm *ProviderQueryManager) findProviderWorker() {
 					}
 				}(p)
 			}
-			wg.Wait()
-			cancel()
-			select {
-			case pqm.providerQueryMessages <- &finishedProviderQueryMessage{
-				ctx: fpr.ctx,
-				k:   k,
-			}:
-			case <-pqm.ctx.Done():
-			}
+			go func() {
+				wg.Wait()
+				cancel()
+				select {
+				case pqm.providerQueryMessages <- &finishedProviderQueryMessage{
+					ctx: fpr.ctx,
+					k:   k,
+				}:
+				case <-pqm.ctx.Done():
+				}
+			}()
 		case <-pqm.ctx.Done():
 			return
 		}
