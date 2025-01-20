@@ -267,8 +267,8 @@ func TestSendCancelsExclude(t *testing.T) {
 	msgs := make(chan msg, 16)
 	peerQueueFactory := makePeerQueueFactory(msgs)
 	tp := random.Peers(3)
-	self, peer1, peer2 := tp[0], tp[1], tp[2]
-	peerManager := New(ctx, peerQueueFactory, self)
+	peer1, peer2 := tp[0], tp[1]
+	peerManager := New(ctx, peerQueueFactory)
 	cids := random.Cids(4)
 
 	// Connect to peer1 and peer2
